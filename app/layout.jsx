@@ -2,13 +2,16 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'GymLog',
-  description: 'Seguimiento de entrenamiento basado en evidencia científica',
+  title: {
+    default: 'AiRen',
+    template: '%s — AiRen',
+  },
+  description: 'Plataforma de bienestar integral. Cada día cuenta.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'GymLog',
+    title: 'AiRen',
   },
   viewport: {
     width: 'device-width',
@@ -23,7 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <head>
-        <meta name="theme-color" content="#0A0A0A" />
+        <meta name="theme-color" content="#080A0C" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

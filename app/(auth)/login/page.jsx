@@ -3,7 +3,10 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+
+export const metadata = {
+  title: 'Ingresar',
+}
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
@@ -14,7 +17,6 @@ export default function LoginPage() {
   const [error, setError]       = useState(null)
 
   const supabase = createClient()
-  const router   = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,11 +25,12 @@ export default function LoginPage() {
     if (mode === 'register') {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) { setError(error.message); setLoading(false); return }
-      setMessage('Revisa tu email para confirmar la cuenta.')
+      setMessage('Cuenta creada. Puedes ingresar ahora.')
+      setMode('login')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) { setError(error.message); setLoading(false); return }
-      router.push('/log')
+      window.location.href = '/log'
     }
     setLoading(false)
   }
@@ -38,8 +41,6 @@ export default function LoginPage() {
       display: 'flex', flexDirection: 'column',
       background: 'var(--bg-0)',
     }}>
-
-      {/* Fondo — gradiente nocturno sutil */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
         background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(74,106,138,0.08) 0%, transparent 70%)',
@@ -53,28 +54,28 @@ export default function LoginPage() {
       }}>
         <div style={{ width: '100%', maxWidth: 340 }} className="anim-fade-up">
 
-          {/* Logo + marca */}
+          {/* Logo AiRen */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-
-            {/* Símbolo — espada minimalista */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
               <svg width="44" height="44" viewBox="0 0 32 32" fill="none" className="anim-blade">
                 <line x1="16" y1="4"  x2="16" y2="26" stroke="var(--amber)"       strokeWidth="1.5" strokeLinecap="round"/>
                 <line x1="10" y1="20" x2="22" y2="20" stroke="var(--amber)"       strokeWidth="1.5" strokeLinecap="round"/>
                 <line x1="16" y1="26" x2="16" y2="29" stroke="var(--amber)"       strokeWidth="2.5" strokeLinecap="round"/>
-                <circle cx="16" cy="4" r="1.5"          fill="var(--amber-light)"/>
+                <circle cx="16" cy="4" r="1.5" fill="var(--amber-light)"/>
               </svg>
             </div>
-
             <p style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '1.6rem', fontWeight: 500,
               letterSpacing: '-0.03em', color: 'var(--amber)',
               marginBottom: 6,
             }}>
-              GymLog
+              AiRen
             </p>
-            <p style={{ fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--txt-3)' }}>
+            <p style={{
+              fontSize: '0.7rem', letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: 'var(--txt-3)',
+            }}>
               cada día cuenta
             </p>
           </div>
@@ -120,18 +121,13 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Línea divisora con ámbar */}
           <div className="blade-line--h" style={{ margin: '2rem 0 1.25rem' }} />
 
-          {/* Propósito — sin condescendencia, directo */}
           <p style={{
-            textAlign: 'center',
-            fontSize: '0.72rem',
-            color: 'var(--txt-3)',
-            lineHeight: 1.7,
-            letterSpacing: '0.02em',
+            textAlign: 'center', fontSize: '0.72rem',
+            color: 'var(--txt-3)', lineHeight: 1.7, letterSpacing: '0.02em',
           }}>
-            Seguimiento de entrenamiento construido sobre evidencia científica.<br />
+            Bienestar integral construido sobre evidencia científica.<br />
             El progreso no es lineal — pero aparece si sigues apareciendo.
           </p>
 
