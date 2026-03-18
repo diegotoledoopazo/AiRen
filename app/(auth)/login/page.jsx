@@ -4,10 +4,6 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 
-export const metadata = {
-  title: 'Ingresar',
-}
-
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -54,7 +50,6 @@ export default function LoginPage() {
       }}>
         <div style={{ width: '100%', maxWidth: 340 }} className="anim-fade-up">
 
-          {/* Logo AiRen */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
               <svg width="44" height="44" viewBox="0 0 32 32" fill="none" className="anim-blade">
@@ -80,7 +75,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="input-group">
               <label className="input-label" htmlFor="email">Email</label>
