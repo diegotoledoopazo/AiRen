@@ -1,12 +1,14 @@
 // middleware.js
-// Protege todas las rutas bajo /(app) — redirige a /login si no hay sesión.
-// Las rutas públicas (login, registro) no pasan por este check.
-
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 export async function middleware(request) {
   let supabaseResponse = NextResponse.next({ request })
+
+  // Si no hay variables de entorno, dejar pasar sin verificar
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -27,24 +29,33 @@ export async function middleware(request) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data?.user ?? null
+  } catch {
+    // Si falla la verificación, tratamos como no autenticado
+    user = null
+  }
 
   const { pathname } = request.nextUrl
 
-  // Rutas protegidas: todo bajo /log y /dashboard
+  // Rutas que requieren autenticación
   const isProtected = pathname.startsWith('/log') || pathname.startsWith('/dashboard')
 
+  // No autenticado intentando acceder a ruta protegida → /login
   if (isProtected && !user) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    return NextResponse.redirect(loginUrl)
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
   }
 
-  // Si ya está logueado y va a /login, redirigir al logger
+  // Ya autenticado intentando ir a /login → /log
   if (pathname === '/login' && user) {
-    const logUrl = request.nextUrl.clone()
-    logUrl.pathname = '/log'
-    return NextResponse.redirect(logUrl)
+    const url = request.nextUrl.clone()
+    url.pathname = '/log'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
@@ -53,3 +64,4 @@ export async function middleware(request) {
 export const config = {
   matcher: ['/log/:path*', '/dashboard/:path*', '/login'],
 }
+
