@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 export async function middleware(request) {
   let supabaseResponse = NextResponse.next({ request })
 
-  // Si no hay variables de entorno, dejar pasar sin verificar
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return supabaseResponse
   }
@@ -34,16 +33,17 @@ export async function middleware(request) {
     const { data } = await supabase.auth.getUser()
     user = data?.user ?? null
   } catch {
-    // Si falla la verificación, tratamos como no autenticado
     user = null
   }
 
   const { pathname } = request.nextUrl
 
-  // Rutas que requieren autenticación
-  const isProtected = pathname.startsWith('/log') || pathname.startsWith('/dashboard')
+  // Fix: '/log' exacto O rutas bajo '/log/' — evita que '/login' sea atrapado
+  const isProtected =
+    pathname === '/log' ||
+    pathname.startsWith('/log/') ||
+    pathname.startsWith('/dashboard')
 
-  // No autenticado intentando acceder a ruta protegida → /login
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -51,7 +51,6 @@ export async function middleware(request) {
     return NextResponse.redirect(url)
   }
 
-  // Ya autenticado intentando ir a /login → /log
   if (pathname === '/login' && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/log'
@@ -62,6 +61,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/log/:path*', '/dashboard/:path*', '/login'],
+  matcher: ['/log', '/log/:path*', '/dashboard/:path*', '/login'],
 }
-
