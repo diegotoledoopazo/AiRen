@@ -2,6 +2,7 @@
 // app/(auth)/login/page.jsx
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [error, setError]       = useState(null)
 
   const supabase = createClient()
+  const router   = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,12 +25,29 @@ export default function LoginPage() {
       if (error) { setError(error.message); setLoading(false); return }
       setMessage('Cuenta creada. Puedes ingresar ahora.')
       setMode('login')
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setError(error.message); setLoading(false); return }
-      window.location.href = '/log'
+      setLoading(false)
+      return
     }
-    setLoading(false)
+
+    // Login — esperar sesión confirmada antes de redirigir
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    if (signInError) { setError(signInError.message); setLoading(false); return }
+
+    // Esperar a que la sesión quede sincronizada en la cookie
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session) {
+      router.refresh()
+      router.replace('/log')
+    } else {
+      // Fallback — si getSession falla, escuchar el evento de auth
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          router.refresh()
+          router.replace('/log')
+        }
+      })
+    }
   }
 
   return (
@@ -101,7 +120,7 @@ export default function LoginPage() {
               type="submit" disabled={loading}
               style={{ marginTop: 6 }}
             >
-              {loading ? '...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+              {loading ? 'Entrando...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
             </button>
           </form>
 
