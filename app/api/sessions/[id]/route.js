@@ -1,6 +1,4 @@
 // app/api/sessions/[id]/route.js
-// PATCH /api/sessions/:id — actualiza la sesión (RPE final, notas, completar)
-
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/supabase-server'
@@ -13,7 +11,7 @@ const PatchSessionSchema = z.object({
 
 export async function PATCH(request, { params }) {
   try {
-    const { user, supabase } = await requireAuth()
+    const { user, supabase } = await requireAuth(request)
 
     const body = await request.json()
     const parsed = PatchSessionSchema.safeParse(body)
@@ -30,7 +28,6 @@ export async function PATCH(request, { params }) {
       updates.completed_at = new Date().toISOString()
     }
 
-    // RLS garantiza que solo el dueño puede actualizar su sesión
     const { data, error } = await supabase
       .from('sessions')
       .update(updates)
