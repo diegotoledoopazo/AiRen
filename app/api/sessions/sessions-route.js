@@ -1,13 +1,8 @@
 // app/api/sessions/route.js
-// POST /api/sessions — crea una nueva sesión de entrenamiento
-// GET  /api/sessions — devuelve las últimas 20 sesiones del usuario
-
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/supabase-server'
 
-// Esquema de validación con Zod
-// Readiness implementa Kenttä & Hassmén (1998): 4 dimensiones 1-5
 const CreateSessionSchema = z.object({
   block_id:             z.string().uuid().optional().nullable(),
   day_label:            z.string().max(80).optional().nullable(),
@@ -22,7 +17,7 @@ const CreateSessionSchema = z.object({
 
 export async function POST(request) {
   try {
-    const { user, supabase } = await requireAuth()
+    const { user, supabase } = await requireAuth(request)
 
     const body = await request.json()
     const parsed = CreateSessionSchema.safeParse(body)
@@ -72,7 +67,7 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    const { user, supabase } = await requireAuth()
+    const { user, supabase } = await requireAuth(request)
 
     const { searchParams } = new URL(request.url)
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
