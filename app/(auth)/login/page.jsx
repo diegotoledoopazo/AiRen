@@ -2,7 +2,6 @@
 // app/(auth)/login/page.jsx
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [error, setError]       = useState(null)
 
   const supabase = createClient()
-  const router   = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -29,25 +27,12 @@ export default function LoginPage() {
       return
     }
 
-    // Login — esperar sesión confirmada antes de redirigir
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) { setError(signInError.message); setLoading(false); return }
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError(error.message); setLoading(false); return }
 
-    // Esperar a que la sesión quede sincronizada en la cookie
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (session) {
-      router.refresh()
-      router.replace('/log')
-    } else {
-      // Fallback — si getSession falla, escuchar el evento de auth
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          router.refresh()
-          router.replace('/log')
-        }
-      })
-    }
+    // Dar tiempo a que las cookies queden escritas antes del redirect
+    await new Promise(r => setTimeout(r, 500))
+    window.location.replace('/log')
   }
 
   return (
@@ -71,10 +56,10 @@ export default function LoginPage() {
 
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <svg width="44" height="44" viewBox="0 0 32 32" fill="none" className="anim-blade">
-                <line x1="16" y1="4"  x2="16" y2="26" stroke="var(--amber)"       strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="10" y1="20" x2="22" y2="20" stroke="var(--amber)"       strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="16" y1="26" x2="16" y2="29" stroke="var(--amber)"       strokeWidth="2.5" strokeLinecap="round"/>
+              <svg width="44" height="44" viewBox="0 0 32 32" fill="none">
+                <line x1="16" y1="4"  x2="16" y2="26" stroke="var(--amber)" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="10" y1="20" x2="22" y2="20" stroke="var(--amber)" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="16" y1="26" x2="16" y2="29" stroke="var(--amber)" strokeWidth="2.5" strokeLinecap="round"/>
                 <circle cx="16" cy="4" r="1.5" fill="var(--amber-light)"/>
               </svg>
             </div>
