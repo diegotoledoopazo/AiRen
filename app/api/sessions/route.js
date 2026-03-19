@@ -1,51 +1,69 @@
-// app/api/sessions/[id]/route.js
-import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireAuth } from '@/lib/supabase-server'
+﻿// app/api/sessions/route.js
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAuth } from "@/lib/supabase-server"
 
-const PatchSessionSchema = z.object({
-  session_rpe:  z.number().int().min(1).max(10).optional(),
-  notes:        z.string().max(500).optional().nullable(),
-  is_completed: z.boolean().optional(),
+const CreateSessionSchema = z.object({
+  block_id:             z.string().uuid().optional().nullable(),
+  day_label:            z.string().max(80).optional().nullable(),
+  date:                 z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  bodyweight_kg:        z.number().min(20).max(400).optional().nullable(),
+  readiness_sleep:      z.number().int().min(1).max(5).optional().nullable(),
+  readiness_energy:     z.number().int().min(1).max(5).optional().nullable(),
+  readiness_motivation: z.number().int().min(1).max(5).optional().nullable(),
+  readiness_soreness:   z.number().int().min(1).max(5).optional().nullable(),
+  notes:                z.string().max(500).optional().nullable(),
 })
 
-export async function PATCH(request, { params }) {
+export async function POST(request) {
   try {
     const { user, supabase } = await requireAuth(request)
-
     const body = await request.json()
-    const parsed = PatchSessionSchema.safeParse(body)
-
+    const parsed = CreateSessionSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: parsed.error.flatten() },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Datos invalidos" }, { status: 400 })
     }
-
-    const updates = { ...parsed.data }
-    if (parsed.data.is_completed) {
-      updates.completed_at = new Date().toISOString()
-    }
-
     const { data, error } = await supabase
-      .from('sessions')
-      .update(updates)
-      .eq('id', params.id)
-      .eq('user_id', user.id)
-      .select('id, session_rpe, is_completed, completed_at, total_volume_kg, notes')
+      .from("sessions")
+      .insert({
+        user_id:              user.id,
+        date:                 parsed.data.date || new Date().toISOString().split("T")[0],
+        bodyweight_kg:        parsed.data.bodyweight_kg,
+        readiness_sleep:      parsed.data.readiness_sleep,
+        readiness_energy:     parsed.data.readiness_energy,
+        readiness_motivation: parsed.data.readiness_motivation,
+        readiness_soreness:   parsed.data.readiness_soreness,
+        notes:                parsed.data.notes,
+        started_at:           new Date().toISOString(),
+        is_completed:         false,
+      })
+      .select("id, date, day_label, readiness_score, readiness_sleep, readiness_energy, readiness_motivation, readiness_soreness, bodyweight_kg, total_volume_kg, is_completed, started_at, notes")
       .single()
-
     if (error) throw error
-    if (!data) {
-      return NextResponse.json({ error: 'Sesión no encontrada' }, { status: 404 })
-    }
-
-    return NextResponse.json({ session: data })
-
+    return NextResponse.json({ session: data }, { status: 201 })
   } catch (err) {
     if (err instanceof Response) return err
-    console.error('[PATCH /api/sessions/:id]', err)
-    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+    console.error("[POST /api/sessions]", err)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+  }
+}
+
+export async function GET(request) {
+  try {
+    const { user, supabase } = await requireAuth(request)
+    const { searchParams } = new URL(request.url)
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50)
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("id, date, day_label, readiness_score, bodyweight_kg, total_volume_kg, is_completed, started_at, completed_at")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return NextResponse.json({ sessions: data })
+  } catch (err) {
+    if (err instanceof Response) return err
+    console.error("[GET /api/sessions]", err)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }
