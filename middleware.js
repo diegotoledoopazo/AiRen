@@ -28,17 +28,12 @@ export async function middleware(request) {
     }
   )
 
-  let user = null
-  try {
-    const { data } = await supabase.auth.getUser()
-    user = data?.user ?? null
-  } catch {
-    user = null
-  }
+  // getSession lee la cookie directamente — sin llamada externa al servidor de Supabase
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   const { pathname } = request.nextUrl
 
-  // Fix: '/log' exacto O rutas bajo '/log/' — evita que '/login' sea atrapado
   const isProtected =
     pathname === '/log' ||
     pathname.startsWith('/log/') ||
