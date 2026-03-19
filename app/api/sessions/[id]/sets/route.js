@@ -1,15 +1,8 @@
 // app/api/sessions/[id]/sets/route.js
-// POST /api/sessions/:id/sets — registra una serie dentro de una sesión
-// GET  /api/sessions/:id/sets — devuelve todas las series de la sesión
-
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/supabase-server'
 
-// reps_in_reserve implementa Zourdos et al. (2016):
-// RIR 3-4: lejos del fallo — volumen / acumulación
-// RIR 1-2: cerca del fallo — intensificación
-// RIR 0:   fallo — usar con moderación (Schoenfeld 2010)
 const CreateSetSchema = z.object({
   exercise_id:      z.string().uuid(),
   set_number:       z.number().int().min(1),
@@ -23,9 +16,8 @@ const CreateSetSchema = z.object({
 
 export async function POST(request, { params }) {
   try {
-    const { user, supabase } = await requireAuth()
+    const { user, supabase } = await requireAuth(request)
 
-    // Verificar que la sesión pertenece al usuario
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('id, is_completed')
@@ -37,10 +29,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Sesión no encontrada' }, { status: 404 })
     }
     if (session.is_completed) {
-      return NextResponse.json(
-        { error: 'No se pueden agregar series a una sesión completada' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Sesión ya completada' }, { status: 409 })
     }
 
     const body = await request.json()
@@ -76,7 +65,6 @@ export async function POST(request, { params }) {
 
     if (error) throw error
 
-    // El trigger recalcula total_volume_kg en sessions automáticamente
     return NextResponse.json({ set: data }, { status: 201 })
 
   } catch (err) {
@@ -88,9 +76,8 @@ export async function POST(request, { params }) {
 
 export async function GET(request, { params }) {
   try {
-    const { user, supabase } = await requireAuth()
+    const { user, supabase } = await requireAuth(request)
 
-    // Verificar que la sesión es del usuario
     const { data: session } = await supabase
       .from('sessions')
       .select('id')
